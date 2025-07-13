@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-// Define proper TypeScript interface for Advocate
 interface Advocate {
   id?: number;
   firstName: string;
@@ -15,65 +14,77 @@ interface Advocate {
   createdAt?: string;
 }
 
+interface Pagination {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export default function Home() {
   const [advocates, setAdvocates] = useState<Advocate[]>([]);
-  const [filteredAdvocates, setFilteredAdvocates] = useState<Advocate[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState<number>(1);
+  const [pagination, setPagination] = useState<Pagination | null>(null);
+  const [pendingSearch, setPendingSearch] = useState<string>("");
+  const limit = 10;
+
+  const fetchAdvocates = async (q = "", pageNum = 1) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const params = new URLSearchParams({
+        q,
+        page: pageNum.toString(),
+        limit: limit.toString(),
+      });
+      const response = await fetch(`/api/advocates?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const jsonResponse = await response.json();
+      setAdvocates(jsonResponse.data);
+      setPagination(jsonResponse.pagination);
+    } catch (err) {
+      console.error("Error fetching advocates:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch advocates");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchAdvocates = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        console.log("fetching advocates...");
-        
-        const response = await fetch("/api/advocates");
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const jsonResponse = await response.json();
-        setAdvocates(jsonResponse.data);
-        setFilteredAdvocates(jsonResponse.data);
-      } catch (err) {
-        console.error("Error fetching advocates:", err);
-        setError(err instanceof Error ? err.message : "Failed to fetch advocates");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAdvocates();
-  }, []);
+    fetchAdvocates(searchTerm, page);
+  }, [searchTerm, page]);
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const searchValue = e.target.value;
-    setSearchTerm(searchValue);
+    setPendingSearch(e.target.value);
+  };
 
-    console.log("filtering advocates...");
-    const filtered = advocates.filter((advocate) => {
-      const searchLower = searchValue.toLowerCase();
-      return (
-        advocate.firstName.toLowerCase().includes(searchLower) ||
-        advocate.lastName.toLowerCase().includes(searchLower) ||
-        advocate.city.toLowerCase().includes(searchLower) ||
-        advocate.degree.toLowerCase().includes(searchLower) ||
-        advocate.specialties.some(specialty => 
-          specialty.toLowerCase().includes(searchLower)
-        ) ||
-        advocate.yearsOfExperience.toString().includes(searchValue)
-      );
-    });
+  const onSearch = () => {
+    setSearchTerm(pendingSearch);
+    setPage(1);
+  };
 
-    setFilteredAdvocates(filtered);
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      onSearch();
+    }
   };
 
   const onClick = () => {
-    console.log(advocates);
-    setFilteredAdvocates(advocates);
+    setPendingSearch("");
     setSearchTerm("");
+    setPage(1);
+  };
+
+  const handlePrev = () => {
+    if (pagination && page > 1) setPage(page - 1);
+  };
+  const handleNext = () => {
+    if (pagination && page < pagination.totalPages) setPage(page + 1);
   };
 
   if (loading) {
@@ -105,12 +116,14 @@ export default function Home() {
         <p>
           Searching for: <span>{searchTerm}</span>
         </p>
-        <input 
-          style={{ border: "1px solid black" }} 
+        <input
+          style={{ border: "1px solid black" }}
           onChange={onChange}
-          value={searchTerm}
+          onKeyDown={onKeyDown}
+          value={pendingSearch}
           placeholder="Search advocates..."
         />
+        <button onClick={onSearch}>Search</button>
         <button onClick={onClick}>Reset Search</button>
       </div>
       <br />
@@ -128,7 +141,7 @@ export default function Home() {
           </tr>
         </thead>
         <tbody>
-          {filteredAdvocates.map((advocate, index) => {
+          {advocates.map((advocate, index) => {
             return (
               <tr key={`${advocate.firstName}-${advocate.lastName}-${index}`}>
                 <td>{advocate.firstName}</td>
@@ -147,8 +160,22 @@ export default function Home() {
           })}
         </tbody>
       </table>
-      {filteredAdvocates.length === 0 && searchTerm && (
+      {advocates.length === 0 && searchTerm && (
         <p>No advocates found matching your search.</p>
+      )}
+      <br />
+      {pagination && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button onClick={handlePrev} disabled={page === 1}>
+            Previous
+          </button>
+          <span>
+            Page {pagination.page} of {pagination.totalPages}
+          </span>
+          <button onClick={handleNext} disabled={page === pagination.totalPages}>
+            Next
+          </button>
+        </div>
       )}
     </main>
   );
