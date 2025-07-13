@@ -21,6 +21,19 @@ interface Pagination {
   totalPages: number;
 }
 
+function formatPhoneNumber(phone: number): string {
+  const str = phone.toString().padStart(10, "0");
+  return `+1 (${str.slice(0, 3)}) ${str.slice(3, 6)}-${str.slice(6)}`;
+}
+
+function highlightMatch(text: string | number, search: string) {
+  if (!search) return text;
+  const regex = new RegExp(`(${search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+  return String(text).split(regex).map((part, i) =>
+    regex.test(part) ? <mark key={i} className="bg-yellow-200 px-1 rounded">{part}</mark> : part
+  );
+}
+
 export default function Home() {
   const [advocates, setAdvocates] = useState<Advocate[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -30,6 +43,8 @@ export default function Home() {
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [pendingSearch, setPendingSearch] = useState<string>("");
   const limit = 10;
+  const [sortBy, setSortBy] = useState<string>("id");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const fetchAdvocates = async (q = "", pageNum = 1) => {
     try {
@@ -78,6 +93,8 @@ export default function Home() {
     setPendingSearch("");
     setSearchTerm("");
     setPage(1);
+    setSortBy("id");
+    setSortOrder("asc");
   };
 
   const handlePrev = () => {
@@ -85,6 +102,28 @@ export default function Home() {
   };
   const handleNext = () => {
     if (pagination && page < pagination.totalPages) setPage(page + 1);
+  };
+
+  const sortedAdvocates = [...advocates].sort((a, b) => {
+    let aValue = a[sortBy as keyof Advocate];
+    let bValue = b[sortBy as keyof Advocate];
+    if (typeof aValue === "string" && typeof bValue === "string") {
+      aValue = aValue.toLowerCase();
+      bValue = bValue.toLowerCase();
+    }
+    if (aValue === undefined || bValue === undefined) return 0;
+    if (aValue < bValue) return sortOrder === "asc" ? -1 : 1;
+    if (aValue > bValue) return sortOrder === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(column);
+      setSortOrder("asc");
+    }
   };
 
   return (
@@ -145,36 +184,32 @@ export default function Home() {
             <table className="min-w-full bg-white border border-gray-200">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b">First Name</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b">Last Name</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b">City</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b">Degree</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b">Specialties</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b">Years of Experience</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b">Phone Number</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b cursor-pointer" onClick={() => handleSort("firstName")}>First Name {sortBy === "firstName" && (sortOrder === "asc" ? "▲" : "▼")}</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b cursor-pointer" onClick={() => handleSort("lastName")}>Last Name {sortBy === "lastName" && (sortOrder === "asc" ? "▲" : "▼")}</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b cursor-pointer" onClick={() => handleSort("city")}>City {sortBy === "city" && (sortOrder === "asc" ? "▲" : "▼")}</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b cursor-pointer" onClick={() => handleSort("degree")}>Degree {sortBy === "degree" && (sortOrder === "asc" ? "▲" : "▼")}</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b cursor-pointer" onClick={() => handleSort("specialties")}>Specialties {sortBy === "specialties" && (sortOrder === "asc" ? "▲" : "▼")}</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b cursor-pointer" onClick={() => handleSort("yearsOfExperience")}>Years of Experience {sortBy === "yearsOfExperience" && (sortOrder === "asc" ? "▲" : "▼")}</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b cursor-pointer" onClick={() => handleSort("phoneNumber")}>Phone Number {sortBy === "phoneNumber" && (sortOrder === "asc" ? "▲" : "▼")}</th>
                 </tr>
               </thead>
               <tbody>
-                {advocates.length === 0 ? (
+                {sortedAdvocates.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="text-center py-8 text-gray-500">
                       No advocates found matching your search.
                     </td>
                   </tr>
                 ) : (
-                  advocates.map((advocate, index) => (
+                  sortedAdvocates.map((advocate, index) => (
                     <tr key={`${advocate.firstName}-${advocate.lastName}-${index}`} className="hover:bg-gray-50">
-                      <td className="px-4 py-2 border-b">{advocate.firstName}</td>
-                      <td className="px-4 py-2 border-b">{advocate.lastName}</td>
-                      <td className="px-4 py-2 border-b">{advocate.city}</td>
-                      <td className="px-4 py-2 border-b">{advocate.degree}</td>
-                      <td className="px-4 py-2 border-b">
-                        {advocate.specialties.map((specialty, specialtyIndex) => (
-                          <div key={`${specialty}-${specialtyIndex}`}>{specialty}</div>
-                        ))}
-                      </td>
-                      <td className="px-4 py-2 border-b">{advocate.yearsOfExperience}</td>
-                      <td className="px-4 py-2 border-b">{advocate.phoneNumber}</td>
+                      <td className="px-4 py-2 border-b">{highlightMatch(advocate.firstName, searchTerm)}</td>
+                      <td className="px-4 py-2 border-b">{highlightMatch(advocate.lastName, searchTerm)}</td>
+                      <td className="px-4 py-2 border-b">{highlightMatch(advocate.city, searchTerm)}</td>
+                      <td className="px-4 py-2 border-b">{highlightMatch(advocate.degree, searchTerm)}</td>
+                      <td className="px-4 py-2 border-b">{highlightMatch(advocate.specialties.join(", "), searchTerm)}</td>
+                      <td className="px-4 py-2 border-b">{highlightMatch(advocate.yearsOfExperience, searchTerm)}</td>
+                      <td className="px-4 py-2 border-b">{highlightMatch(formatPhoneNumber(advocate.phoneNumber), searchTerm)}</td>
                     </tr>
                   ))
                 )}
