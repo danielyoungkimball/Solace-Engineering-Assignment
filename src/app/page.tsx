@@ -87,95 +87,124 @@ export default function Home() {
     if (pagination && page < pagination.totalPages) setPage(page + 1);
   };
 
-  if (loading) {
-    return (
-      <main style={{ margin: "24px" }}>
-        <h1>Solace Advocates</h1>
-        <p>Loading advocates...</p>
-      </main>
-    );
-  }
-
-  if (error) {
-    return (
-      <main style={{ margin: "24px" }}>
-        <h1>Solace Advocates</h1>
-        <p style={{ color: "red" }}>Error: {error}</p>
-        <button onClick={() => window.location.reload()}>Retry</button>
-      </main>
-    );
-  }
-
   return (
-    <main style={{ margin: "24px" }}>
-      <h1>Solace Advocates</h1>
-      <br />
-      <br />
-      <div>
-        <p>Search</p>
-        <p>
-          Searching for: <span>{searchTerm}</span>
-        </p>
-        <input
-          style={{ border: "1px solid black" }}
-          onChange={onChange}
-          onKeyDown={onKeyDown}
-          value={pendingSearch}
-          placeholder="Search advocates..."
-        />
-        <button onClick={onSearch}>Search</button>
-        <button onClick={onClick}>Reset Search</button>
-      </div>
-      <br />
-      <br />
-      <table>
-        <thead>
-          <tr>
-            <th>First Name</th>
-            <th>Last Name</th>
-            <th>City</th>
-            <th>Degree</th>
-            <th>Specialties</th>
-            <th>Years of Experience</th>
-            <th>Phone Number</th>
-          </tr>
-        </thead>
-        <tbody>
-          {advocates.map((advocate, index) => {
-            return (
-              <tr key={`${advocate.firstName}-${advocate.lastName}-${index}`}>
-                <td>{advocate.firstName}</td>
-                <td>{advocate.lastName}</td>
-                <td>{advocate.city}</td>
-                <td>{advocate.degree}</td>
-                <td>
-                  {advocate.specialties.map((specialty, specialtyIndex) => (
-                    <div key={`${specialty}-${specialtyIndex}`}>{specialty}</div>
-                  ))}
-                </td>
-                <td>{advocate.yearsOfExperience}</td>
-                <td>{advocate.phoneNumber}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      {advocates.length === 0 && searchTerm && (
-        <p>No advocates found matching your search.</p>
-      )}
-      <br />
-      {pagination && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button onClick={handlePrev} disabled={page === 1}>
-            Previous
+    <main className="max-w-5xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6 text-gray-800">Solace Advocates</h1>
+      <div className="bg-white rounded shadow p-4 mb-8 flex flex-col md:flex-row md:items-end gap-4">
+        <div className="flex-1">
+          <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+            Search
+          </label>
+          <input
+            id="search"
+            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            onChange={onChange}
+            onKeyDown={onKeyDown}
+            value={pendingSearch}
+            placeholder="Search advocates..."
+            autoComplete="off"
+          />
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={onSearch}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+          >
+            Search
           </button>
-          <span>
-            Page {pagination.page} of {pagination.totalPages}
-          </span>
-          <button onClick={handleNext} disabled={page === pagination.totalPages}>
-            Next
+          <button
+            onClick={onClick}
+            className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 transition"
+          >
+            Reset
           </button>
         </div>
+      </div>
+      <div className="mb-4 text-gray-600 text-sm">
+        {searchTerm && (
+          <span>Searching for: <span className="font-semibold">{searchTerm}</span></span>
+        )}
+      </div>
+      {loading ? (
+        <div className="flex justify-center items-center h-40">
+          <span className="text-gray-500">Loading advocates...</span>
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center h-40">
+          <span className="text-red-600 mb-2">Error: {error}</span>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+          >
+            Retry
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto rounded shadow">
+            <table className="min-w-full bg-white border border-gray-200">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b">First Name</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b">Last Name</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b">City</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b">Degree</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b">Specialties</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b">Years of Experience</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 border-b">Phone Number</th>
+                </tr>
+              </thead>
+              <tbody>
+                {advocates.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-8 text-gray-500">
+                      No advocates found matching your search.
+                    </td>
+                  </tr>
+                ) : (
+                  advocates.map((advocate, index) => (
+                    <tr key={`${advocate.firstName}-${advocate.lastName}-${index}`} className="hover:bg-gray-50">
+                      <td className="px-4 py-2 border-b">{advocate.firstName}</td>
+                      <td className="px-4 py-2 border-b">{advocate.lastName}</td>
+                      <td className="px-4 py-2 border-b">{advocate.city}</td>
+                      <td className="px-4 py-2 border-b">{advocate.degree}</td>
+                      <td className="px-4 py-2 border-b">
+                        {advocate.specialties.map((specialty, specialtyIndex) => (
+                          <div key={`${specialty}-${specialtyIndex}`}>{specialty}</div>
+                        ))}
+                      </td>
+                      <td className="px-4 py-2 border-b">{advocate.yearsOfExperience}</td>
+                      <td className="px-4 py-2 border-b">{advocate.phoneNumber}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          {pagination && (
+            <div className="flex justify-between items-center mt-6">
+              <div className="text-sm text-gray-600">
+                Page {pagination.page} of {pagination.totalPages} ({pagination.total} results)
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handlePrev}
+                  disabled={page === 1}
+                  className="px-3 py-1 rounded border border-gray-300 bg-white text-gray-700 disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={handleNext}
+                  disabled={page === pagination.totalPages}
+                  className="px-3 py-1 rounded border border-gray-300 bg-white text-gray-700 disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </main>
   );
