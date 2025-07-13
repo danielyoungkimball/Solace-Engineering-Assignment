@@ -1,5 +1,10 @@
 # Solace Candidate Assignment
 
+Short video showcasing final product:
+
+https://github.com/user-attachments/assets/c4f9b4e9-01e7-4c39-be6d-a29078902c80
+
+
 Hello! This repo contains my completed take-home assignment for the Senior Full Stack Engineer role @ Solace!
 
 ## Steps to Repro
