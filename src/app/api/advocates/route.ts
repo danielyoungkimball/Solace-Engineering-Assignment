@@ -12,15 +12,20 @@ export async function GET(request: NextRequest) {
 
   let whereClause;
   if (q) {
-    whereClause = or(
-      ilike(advocates.firstName, `%${q}%`),
-      ilike(advocates.lastName, `%${q}%`),
-      ilike(advocates.city, `%${q}%`),
-      ilike(advocates.degree, `%${q}%`)
+    const like = (col: string) => `${col} ILIKE '%${q}%'`;
+    whereClause = sql.raw(
+      [
+        like("first_name"),
+        like("last_name"),
+        like("city"),
+        like("degree"),
+        `payload::text ILIKE '%${q}%'`,
+        `CAST(years_of_experience AS TEXT) ILIKE '%${q}%'`,
+        `CAST(phone_number AS TEXT) ILIKE '%${q}%'`,
+      ].join(" OR ")
     );
   }
 
-  // Paginated results
   let data;
   if (whereClause) {
     data = await db
@@ -39,7 +44,6 @@ export async function GET(request: NextRequest) {
       .offset(offset);
   }
 
-  // Total count
   let countResult;
   if (whereClause) {
     countResult = await db
@@ -51,7 +55,7 @@ export async function GET(request: NextRequest) {
       .select({ count: sql`COUNT(*)::int` })
       .from(advocates);
   }
-  const total = countResult[0]?.count || 0;
+  const total = Number(countResult[0]?.count) || 0;
 
   return Response.json({
     data,
@@ -59,7 +63,7 @@ export async function GET(request: NextRequest) {
       total,
       page,
       limit,
-      totalPages: Math.ceil(Number(total) / limit),
+      totalPages: Math.ceil(total / limit),
     },
   });
 }
